@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GeoServer WMS with Leaflet and CQL Filters</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+        }
+        #map {
+            height: 90%; 
+        }
+        #controls {
+            height: 10%;
+            padding: 10px;
+            background: #f4f4f4;
+        }
+    </style>
+</head>
+<body>
+    <div id="controls">
+        <label><input type="checkbox" value="hydro" class="filter"> Hydro</label>
+        <label><input type="checkbox" value="wind" class="filter"> Wind</label>
+        <label><input type="checkbox" value="solar" class="filter"> Solar</label>
+        <label><input type="checkbox" value="gas" class="filter"> Gas</label>
+        <label><input type="checkbox" value="nuclear" class="filter"> Nuclear</label>
+        <label><input type="checkbox" value="diesel" class="filter"> Diesel</label>
+        <label><input type="checkbox" value="coal" class="filter"> Coal</label>
+        <label><input type="checkbox" value="oil" class="filter"> Oil</label>
+        <button id="applyFilters">Apply Filters</button>
+    </div>
+    <div id="map"></div>
+    <script>
+        var map = L.map("map").setView([40.4168, -3.7038], 5); 
+
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            attribution: "© OpenStreetMap contributors",
+        }).addTo(map);
+
+        var wmsLayer;
+
+        function addWMSLayer(cqlFilter) {
+            if (wmsLayer) {
+                map.removeLayer(wmsLayer);
+            }
+
+            wmsLayer = L.tileLayer.wms(
+                "http://localhost:8080/geoserver/wms?",
+                {
+                    layers: "MongoDBDD:generadores",
+                    format: "image/png",
+                    transparent: true,
+                    cql_filter: cqlFilter, 
+                }
+            ).addTo(map);
+        }
+
+        function getCQLFilter() {
+            var selectedFilters = [];
+            $(".filter:checked").each(function () {
+                selectedFilters.push(`"properties.plant:source"='${this.value}'`);
+            });
+            return selectedFilters.length > 0
+                ? selectedFilters.join(" OR ") 
+                : null; 
+        }
+
+        $("#applyFilters").on("click", function () {
+            var cqlFilter = getCQLFilter();
+            addWMSLayer(cqlFilter);
+        });
+
+        addWMSLayer(null);
+
+        map.on("click", function (e) {
+            var latlng = e.latlng;
+            var url = getFeatureInfoUrl(latlng);
+
+            $.ajax({
+                url: url,
+                success: function (data) {
+                    if (data.features && data.features.length > 0) {
+                        var content = formatFeatureInfo(data.features[0].properties);
+                        L.popup().setLatLng(latlng).setContent(content).openOn(map);
+                    }
+                },
+            });
+        });
+
+        function getFeatureInfoUrl(latlng) {
+            var point = map.latLngToContainerPoint(latlng, map.getZoom());
+            var size = map.getSize();
+
+            var params = {
+                request: "GetFeatureInfo",
+                service: "WMS",
+                srs: "EPSG:4326",
+                styles: "",
+                transparent: true,
+                version: "1.1.1",
+                format: "image/png",
+                bbox: map.getBounds().toBBoxString(),
+                height: size.y,
+                width: size.x,
+                layers: "MongoDBDD:generadores",
+                query_layers: "MongoDBDD:generadores",
+                info_format: "application/json",
+                x: Math.round(point.x),
+                y: Math.round(point.y),
+            };
+
+            return (
+                wmsLayer._url + L.Util.getParamString(params, wmsLayer._url, true)
+            );
+        }
+
+        function formatFeatureInfo(properties) {
+            var content = "<table>";
+            for (var key in properties) {
+                content +=
+                    "<tr><th>" + key + "</th><td>" + properties[key] + "</td></tr>";
+            }
+            content += "</table>";
+            return content;
+        }
+    </script>
+</body>
+</html>
