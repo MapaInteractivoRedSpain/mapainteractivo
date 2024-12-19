@@ -1,99 +1,100 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>GeoServerxxxxxx gith</title>
+    <title>GeoServer WMS con Leaflet</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <style>
-        html, body {
-            height: 100%;
-            margin: 0;
-        }
         #map {
-            height: 90%; 
-        }
-        #controls {
-            height: 10%;
-            padding: 10px;
-            background: #f4f4f4;
+            height: 600px;
         }
     </style>
 </head>
 <body>
-    <div id="controls">
-        <label><input type="checkbox" value="hydro" class="filter"> Hydro</label>
-        <label><input type="checkbox" value="wind" class="filter"> Wind</label>
-        <label><input type="checkbox" value="solar" class="filter"> Solar</label>
-        <label><input type="checkbox" value="gas" class="filter"> Gas</label>
-        <label><input type="checkbox" value="nuclear" class="filter"> Nuclear</label>
-        <label><input type="checkbox" value="diesel" class="filter"> Diesel</label>
-        <label><input type="checkbox" value="coal" class="filter"> Coal</label>
-        <label><input type="checkbox" value="oil" class="filter"> Oil</label>
-        <button id="applyFilters">Apply Filters</button>
-    </div>
     <div id="map"></div>
     <script>
-        var map = L.map("map").setView([40.4168, -3.7038], 5); 
+        var map = L.map("map").setView([0, 0], 2);
 
         L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
             attribution: "© OpenStreetMap contributors",
         }).addTo(map);
 
-        var wmsLayer;
-
-        function addWMSLayer(cqlFilter) {
-            if (wmsLayer) {
-                map.removeLayer(wmsLayer);
-            }
-
-            wmsLayer = L.tileLayer.wms(
-                "https://ec2-13-51-100-199.eu-north-1.compute.amazonaws.com/geoserver/wms
-",
-                {
-                    layers: "MongoDBDD:generadores",
-                    format: "image/png",
-                    transparent: true,
-                    cql_filter: cqlFilter, 
-                }
-            ).addTo(map);
-        }
-
-        function getCQLFilter() {
-            var selectedFilters = [];
-            $(".filter:checked").each(function () {
-                selectedFilters.push(`"properties.plant:source"='${this.value}'`);
-            });
-            return selectedFilters.length > 0
-                ? selectedFilters.join(" OR ") 
-                : null; 
-        }
-
-        $("#applyFilters").on("click", function () {
-            var cqlFilter = getCQLFilter();
-            addWMSLayer(cqlFilter);
+        // Definición de las capas WMS
+        var wmsLayerSubestaciones = L.tileLayer.wms("https://ec2-13-51-100-199.eu-north-1.compute.amazonaws.com/geoserver/wms", {
+            layers: "MongoDBDD:subestaciones",
+            format: "image/png",
+            transparent: true,
         });
 
-        addWMSLayer(null);
+        var wmsLayerRedesElectricas = L.tileLayer.wms("https://ec2-13-51-100-199.eu-north-1.compute.amazonaws.com/geoserver/wms", {
+            layers: "MongoDBDD:redeselectricas",
+            format: "image/png",
+            transparent: true,
+        });
 
+        var wmsLayerGeneradores = L.tileLayer.wms("https://ec2-13-51-100-199.eu-north-1.compute.amazonaws.com/geoserver/wms", {
+            layers: "MongoDBDD:generadores",
+            format: "image/png",
+            transparent: true,
+        });
+
+        // Nueva capa WMS para áreas protegidas
+        var wmsLayerProtectedAreas = L.tileLayer.wms("https://app-geoserver-dev-northeu-001.azurewebsites.net/protected_areas/wms?", {
+            layers: "protected_areas:WDPA_WDOECM_Mar2023_Public_ESP_shp-polygons_2",
+            format: "image/png",
+            transparent: true,
+        });
+
+        // Agregar el control de capas
+        var baseMaps = {
+            "OpenStreetMap": L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+                attribution: "© OpenStreetMap contributors"
+            })
+        };
+
+        var overlayMaps = {
+            "Subestaciones": wmsLayerSubestaciones,
+            "Redes Eléctricas": wmsLayerRedesElectricas,
+            "Generadores": wmsLayerGeneradores,
+            "Áreas Protegidas": wmsLayerProtectedAreas // Nueva capa añadida aquí
+        };
+
+        // Añadir el control de capas al mapa
+        L.control.layers(baseMaps, overlayMaps, {
+            position: 'topright', // Posición del control
+            collapsed: false // Si el control está desplegado por defecto
+        }).addTo(map);
+
+        // Función para manejar clics en el mapa
         map.on("click", function (e) {
             var latlng = e.latlng;
-            var url = getFeatureInfoUrl(latlng);
+            var urls = [
+                getFeatureInfoUrl(latlng, wmsLayerSubestaciones),
+                getFeatureInfoUrl(latlng, wmsLayerRedesElectricas),
+                getFeatureInfoUrl(latlng, wmsLayerGeneradores),
+                getFeatureInfoUrl(latlng, wmsLayerProtectedAreas) // Nueva URL añadida aquí
+            ];
 
-            $.ajax({
-                url: url,
-                success: function (data) {
-                    if (data.features && data.features.length > 0) {
-                        var content = formatFeatureInfo(data.features[0].properties);
-                        L.popup().setLatLng(latlng).setContent(content).openOn(map);
+            $.each(urls, function(index, url) {
+                $.ajax({
+                    url: url,
+                    success: function (data) {
+                        if (data.features && data.features.length > 0) {
+                            var content = formatFeatureInfo(data.features[0].properties);
+                            L.popup().setLatLng(latlng).setContent(content).openOn(map);
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        console.error("Error en la solicitud:", status, error);
                     }
-                },
+                });
             });
         });
 
-        function getFeatureInfoUrl(latlng) {
+        function getFeatureInfoUrl(latlng, layer) {
             var point = map.latLngToContainerPoint(latlng, map.getZoom());
             var size = map.getSize();
 
@@ -108,23 +109,20 @@
                 bbox: map.getBounds().toBBoxString(),
                 height: size.y,
                 width: size.x,
-                layers: "MongoDBDD:generadores",
-                query_layers: "MongoDBDD:generadores",
+                layers: layer.options.layers,
+                query_layers: layer.options.layers,
                 info_format: "application/json",
                 x: Math.round(point.x),
                 y: Math.round(point.y),
             };
 
-            return (
-                wmsLayer._url + L.Util.getParamString(params, wmsLayer._url, true)
-            );
+            return layer._url + L.Util.getParamString(params, layer._url, true);
         }
 
         function formatFeatureInfo(properties) {
             var content = "<table>";
             for (var key in properties) {
-                content +=
-                    "<tr><th>" + key + "</th><td>" + properties[key] + "</td></tr>";
+                content += "<tr><th>" + key + "</th><td>" + properties[key] + "</td></tr>";
             }
             content += "</table>";
             return content;
