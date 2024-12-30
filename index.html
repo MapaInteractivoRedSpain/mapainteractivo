@@ -5,79 +5,443 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>GeoServer WMS con Leaflet</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-measure/dist/leaflet-measure.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-minimap/dist/Control.MiniMap.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="custom-security.js"></script>
+    <script src="https://unpkg.com/leaflet-measure/dist/leaflet-measure.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
+    <script src="https://unpkg.com/leaflet-minimap/dist/Control.MiniMap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
     <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
         #map {
-            height: 600px;
+            height: 100%;
+        }
+        .leaflet-control-layers, #filters {
+            background: #003366; 
+            border-radius: 5px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+            padding: 10px;
+            color: white; 
+            max-height: 300px; 
+            overflow-y: auto; 
+        }
+        .leaflet-control-layers label, #filters label {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+            color: white;
+        }
+        .leaflet-control-layers input[type="checkbox"], #filters input[type="checkbox"] {
+            margin-right: 8px;
+        }
+        .leaflet-control-layers h3, #filters h3 {
+            margin: 0;
+            font-size: 16px;
+            color: #ffffff; 
+        }
+        .filter-panel {
+            margin-bottom: 20px;
+        }
+        #filters {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 1000;
+        }
+        #cql-filter {
+            position: absolute;
+            bottom: 10px; 
+            left: 10px;
+            z-index: 1000;
+            background: #003366;
+            border-radius: 5px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+            padding: 10px;
+            color: white;
+        }
+        #cql-filter input {
+            width: 200px;
+            padding: 5px;
+            border: none;
+            border-radius: 3px;
+        }
+        #cql-filter button {
+            margin-top: 5px;
+            padding: 5px 10px;
+            border: none;
+            border-radius: 3px;
+            background: #0066cc;
+            color: white;
+            cursor: pointer;
+        }
+        #cql-filter button:hover {
+            background: #005bb5;
         }
     </style>
 </head>
 <body>
-    <div id="map"></div>
-    <script>
-        var map = L.map("map").setView([0, 0], 2);
+    <div id="map" role="application" aria-label="Mapa interactivo con capas de información geoespacial"></div> 
 
-        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    <div id="filters">
+        <div id="generadores-filters" class="filter-panel" style="display: none;">
+            <h3>Filtros Generadores</h3>
+            <label><input type="checkbox" class="filter" value="solar" /> Solar</label>
+            <label><input type="checkbox" class="filter" value="hydro" /> Hidroeléctrica</label>
+            <label><input type="checkbox" class="filter" value="gas" /> Gas</label>
+            <label><input type="checkbox" class="filter" value="wind" /> Eólica</label>
+            <label><input type="checkbox" class="filter" value="nuclear" /> Nuclear</label>
+            <label><input type="checkbox" class="filter" value="diesel" /> Diesel</label>
+            <label><input type="checkbox" class="filter" value="coal" /> Carbón</label>
+            <label><input type="checkbox" class="filter" value="oil" /> Petróleo</label>
+            <label><input type="checkbox" class="filter" value="otros" /> Otros</label> 
+            <label><input type="checkbox" class="filter" value="todos" /> Todos</label> 
+        </div>
+
+        <div id="subestaciones-filters" class="filter-panel" style="display: none;">
+            <h3>Filtros Subestaciones</h3>
+            <label><input type="checkbox" class="filter-subestaciones" value="converter" /> Convertidor</label>
+            <label><input type="checkbox" class="filter-subestaciones" value="distribution" /> Distribución</label>
+            <label><input type="checkbox" class="filter-subestaciones" value="generation" /> Generación</label>
+            <label><input type="checkbox" class="filter-subestaciones" value="industrial" /> Industrial</label>
+            <label><input type="checkbox" class="filter-subestaciones" value="minor_distribution" /> Distribución Menor</label>
+            <label><input type="checkbox" class="filter-subestaciones" value="traction" /> Tracción</label>
+            <label><input type="checkbox" class="filter-subestaciones" value="transmission" /> Transmisión</label>
+        </div>
+
+        <div id="redeselectricas-filters" class="filter-panel" style="display: none;">
+            <h3>Filtros Redes Eléctricas</h3>
+            <label><input type="checkbox" class="filter-redeselectricas" value="MT" /> Media Tensión</label>
+            <label><input type="checkbox" class="filter-redeselectricas" value="AT" /> Alta Tensión</label>
+            <label><input type="checkbox" class="filter-redeselectricas" value="MAT" /> Muy Alta Tensión</label>
+            <label><input type="checkbox" class="filter-redeselectricas" value="todas" /> Todas</label> 
+            <label><input type="checkbox" class="filter-redeselectricas" value="otras" /> Otras</label> 
+        </div>
+
+        <div id="protectedareas-filters" class="filter-panel" style="display: none;">
+            <h3>Filtros Áreas Protegidas</h3>
+            <label><input type="checkbox" class="filter" value="reservas-refugios" /> Reservas y Refugios</label>
+            <label><input type="checkbox" class="filter" value="parques" /> Parques</label>
+            <label><input type="checkbox" class="filter" value="areas-interes-ecologico-biodiversidad" /> Áreas de Interés Ecológico y Biodiversidad</label>
+            <label><input type="checkbox" class="filter" value="zonas-protegidas-especial-valor" /> Zonas Protegidas y de Especial Valor</label>
+            <label><input type="checkbox" class="filter" value="monumentos-naturales-singulares" /> Monumentos Naturales y Singulares</label>
+            <label><input type="checkbox" class="filter" value="areas-uso-publico-recreativo" /> Áreas de Uso Público y Recreativo</label>
+            <label><input type="checkbox" class="filter" value="areas-interes-cientifico-cultural" /> Áreas de Interés Científico y Cultural</label>
+            <label><input type="checkbox" class="filter" value="parajes-naturales" /> Parajes Naturales</label>
+            <label><input type="checkbox" class="filter" value="todos" /> Todos</label> 
+
+        </div>
+
+        <div id="inundaciones-filters" class="filter-panel" style="display: none;">
+            <h3>Filtros Inundaciones</h3>
+            <label><input type="checkbox" class="filter" value="T10" /> T10</label>
+            <label><input type="checkbox" class="filter" value="T100" /> T100</label>
+            <label><input type="checkbox" class="filter" value="T500" /> T500</label>
+        </div>
+
+        <div id="railtransport-filters" class="filter-panel" style="display: none;">
+            <h3>Filtros Enlace Ferroviario</h3>
+            <label><input type="checkbox" class="filter" value="high-speed" /> Alta Velocidad</label>
+            <label><input type="checkbox" class="filter" value="freight" /> Carga</label>
+        </div>
+
+        <div id="roadtransport-filters" class="filter-panel" style="display: none;">
+            <h3>Filtros Enlace de Carretera</h3>
+            <label><input type="checkbox" class="filter" value="Peaje" /> Peaje</label>
+            <label><input type="checkbox" class="filter" value="Libre" /> Libre</label>
+        </div>
+
+        <div id="denspob2023-filters" class="filter-panel" style="display: none;">
+            <h3>Filtros Densidad de Población</h3>
+            <label><input type="checkbox" class="filter-denspob2023" value="muy-baja" /> Muy Baja (0,2 a 24,9 hab/m²)</label>
+            <label><input type="checkbox" class="filter-denspob2023" value="baja" /> Baja (25,0 a 49,9 hab/m²)</label>
+            <label><input type="checkbox" class="filter-denspob2023" value="moderada" /> Moderada (50,0 a 99,9 hab/m²)</label>
+            <label><input type="checkbox" class="filter-denspob2023" value="alta" /> Alta (100,0 a 248,5 hab/m²)</label>
+            <label><input type="checkbox" class="filter-denspob2023" value="muy-alta" /> Muy Alta (251,5 a 499,6 hab/m²)</label>
+            <label><input type="checkbox" class="filter-denspob2023" value="extremadamente-alta" /> Extremadamente Alta (500,0 a 24,233,3 hab/m²)</label>
+        </div>
+
+        <div id="emergencia-filters" class="filter-panel" style="display: none;">
+            <h3>Filtros Emergencia</h3>
+            <label><input type="checkbox" class="filter-emergencia" value="hospital" /> Hospital</label>
+            <label><input type="checkbox" class="filter-emergencia" value="fire_station" /> Estación de Bomberos</label>
+            <label><input type="checkbox" class="filter-emergencia" value="police" /> Policía</label>
+        </div>
+
+    </div>
+
+    <div id="cql-filter">
+        <label for="cql-input">Consultar:</label>
+        <input type="text" id="cql-input" placeholder="Escribe tu consulta aquí" />
+        <button id="apply-cql">Aplicar</button>
+        <button id="clear-cql">Limpiar</button>
+    </div>
+
+    <script>
+        var map = L.map("map").setView([40.4168, -3.7038], 6); 
+
+        var osmLayer = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
             attribution: "© OpenStreetMap contributors",
+        });
+
+        var satelliteLayer = L.tileLayer("https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png", {
+            attribution: "© OpenTopoMap contributors",
+        });
+
+        var baseMaps = {
+            "OpenStreetMap": osmLayer,
+            "Satélite": satelliteLayer
+        };
+
+        osmLayer.addTo(map);
+
+        var geocoder = L.Control.geocoder({
+            defaultMarkGeocode: false,
+            geocoder: L.Control.Geocoder.nominatim({
+                geocodingQueryParams: {
+                    countrycodes: 'ES' 
+                }
+            })
+        })
+        .on('markgeocode', function(e) {
+            var bbox = e.geocode.bbox;
+            var poly = L.polygon([
+                bbox.getSouthEast(),
+                bbox.getNorthEast(),
+                bbox.getNorthWest(),
+                bbox.getSouthWest()
+            ]).addTo(map);
+            map.fitBounds(poly.getBounds());
+
+        
+            setTimeout(function() {
+                map.removeLayer(poly);
+            }, 5000);
+        })
+        .addTo(map);
+
+        var measureControl = new L.Control.Measure({
+            primaryLengthUnit: 'meters',
+            secondaryLengthUnit: 'kilometers',
+            primaryAreaUnit: 'sqmeters',
+            secondaryAreaUnit: 'hectares',
+            activeColor: '#ABE67E',
+            completedColor: '#C8F2BE'
+        });
+        map.addControl(measureControl);
+
+        var markers = L.markerClusterGroup();
+
+        var marker1 = L.marker([40.4168, -3.7038]).bindPopup('Madrid');
+        var marker2 = L.marker([41.3851, 2.1734]).bindPopup('Barcelona');
+        var marker3 = L.marker([39.4699, -0.3763]).bindPopup('Valencia');
+
+        markers.addLayer(marker1);
+        markers.addLayer(marker2);
+        markers.addLayer(marker3);
+
+        map.addLayer(markers);
+
+        var miniMapLayer = new L.TileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            attribution: "© OpenStreetMap contributors"
+        });
+        var miniMap = new L.Control.MiniMap(miniMapLayer, {
+            toggleDisplay: true,
+            minimized: false,
+            position: 'bottomright'
         }).addTo(map);
 
-        // Definición de las capas WMS
-        var wmsLayerSubestaciones = L.tileLayer.wms("https://ec2-13-51-100-199.eu-north-1.compute.amazonaws.com:8080/geoserver/wms", {
+        // Agregar control de dibujo
+        var drawnItems = new L.FeatureGroup();
+        map.addLayer(drawnItems);
+
+        var drawControl = new L.Control.Draw({
+            edit: {
+                featureGroup: drawnItems
+            }
+        });
+        map.addControl(drawControl);
+
+        map.on(L.Draw.Event.CREATED, function (event) {
+            var layer = event.layer;
+            drawnItems.addLayer(layer);
+        });
+
+        var wmsLayerSubestaciones = L.tileLayer.wms("http://localhost:8080/geoserver/wms?", {
             layers: "MongoDBDD:subestaciones",
             format: "image/png",
             transparent: true,
         });
 
-        var wmsLayerRedesElectricas = L.tileLayer.wms("https://ec2-13-51-100-199.eu-north-1.compute.amazonaws.com:8080/geoserver/wms?", {
-            layers: "MongoDBDD:redeselectricas",
-            format: "image/png",
-            transparent: true,
-        });
-
-        var wmsLayerGeneradores = L.tileLayer.wms("https://ec2-13-51-100-199.eu-north-1.compute.amazonaws.com:8080/geoserver/wms?", {
+        var wmsLayerGeneradores = L.tileLayer.wms("http://localhost:8080/geoserver/wms?", {
             layers: "MongoDBDD:generadores",
             format: "image/png",
             transparent: true,
         });
 
-        // Nueva capa WMS para áreas protegidas
-        var wmsLayerProtectedAreas = L.tileLayer.wms("https://app-geoserver-dev-northeu-001.azurewebsites.net/protected_areas/wms?", {
-            layers: "protected_areas:WDPA_WDOECM_Mar2023_Public_ESP_shp-polygons_2",
+        var wmsLayerRedesElectricas = L.tileLayer.wms("http://localhost:8080/geoserver/wms?", {
+            layers: "MongoDBDD:redeselectricas",
             format: "image/png",
             transparent: true,
         });
 
-        // Agregar el control de capas
-        var baseMaps = {
-            "OpenStreetMap": L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-                attribution: "© OpenStreetMap contributors"
-            })
+        var wmsLayerProtectedAreas = L.tileLayer.wms("http://localhost:8080/geoserver/wms?", {
+            layers: "MongoDBDD:espacios",
+            format: "image/png",
+            transparent: true,
+        });
+
+        var wmsLayerFluvialT10 = L.tileLayer.wms("http://servicios.idee.es/wms-inspire/riesgos-naturales/inundaciones?", {
+            layers: "NZ.Flood.FluvialT10",
+            format: "image/png",
+            transparent: true,
+        });
+
+        var wmsLayerFluvialT100 = L.tileLayer.wms("http://servicios.idee.es/wms-inspire/riesgos-naturales/inundaciones?", {
+            layers: "NZ.Flood.FluvialT100",
+            format: "image/png",
+            transparent: true,
+        });
+
+        var wmsLayerFluvialT500 = L.tileLayer.wms("http://servicios.idee.es/wms-inspire/riesgos-naturales/inundaciones?", {
+            layers: "NZ.Flood.FluvialT500",
+            format: "image/png",
+            transparent: true,
+        });
+
+        var wmsLayerMarinaT100 = L.tileLayer.wms("http://servicios.idee.es/wms-inspire/riesgos-naturales/inundaciones?", {
+            layers: "NZ.Flood.MarinaT100",
+            format: "image/png",
+            transparent: true,
+        });
+
+        var wmsLayerMarinaT500 = L.tileLayer.wms("http://servicios.idee.es/wms-inspire/riesgos-naturales/inundaciones?", {
+            layers: "NZ.Flood.MarinaT500",
+            format: "image/png",
+            transparent: true,
+        });
+
+        var wmsLayerRailTransportNetwork = L.tileLayer.wms("https://servicios.idee.es/wms-inspire/transportes?", {
+            layers: "TN.RailTransportNetwork.RailwayLink",
+            format: "image/png",
+            transparent: true,
+        });
+
+        var wmsLayerRoadTransportNetwork = L.tileLayer.wms("https://servicios.idee.es/wms-inspire/transportes?", {
+            layers: "TN.RoadTransportNetwork.RoadLink",
+            format: "image/png",
+            transparent: true,
+        });
+
+        var wmsLayerDensPob2023 = L.tileLayer.wms("http://localhost:8080/geoserver/wms?", {
+            layers: "MongoDBDD:capadensidadbuena",
+            format: "image/png",
+            transparent: true,
+        });
+
+        var wmsLayerEmergencia = L.tileLayer.wms("http://localhost:8080/geoserver/wms?", {
+            layers: "MongoDBDD:emergencia",
+            format: "image/png",
+            transparent: true,
+        });
+
+        var wmsLayerIncendiosForestales = L.tileLayer.wms("https://geoserver.iepnb.es/geoserver/incendios_forestales/frec_incend_2006_2015/wfs?", {
+            layers: "incendios_forestales:frec_incend_2006_2015",
+            format: "image/png",
+            transparent: true,
+        });
+
+        var baseMaps = { 
+            "OpenStreetMap": osmLayer, 
+            "Satélite": satelliteLayer
         };
 
         var overlayMaps = {
             "Subestaciones": wmsLayerSubestaciones,
             "Redes Eléctricas": wmsLayerRedesElectricas,
             "Generadores": wmsLayerGeneradores,
-            "Áreas Protegidas": wmsLayerProtectedAreas // Nueva capa añadida aquí
+            "Áreas Protegidas": wmsLayerProtectedAreas,
+            "Riesgo Inundación Fluvial": L.layerGroup([wmsLayerFluvialT10, wmsLayerFluvialT100, wmsLayerFluvialT500]),
+            "Riesgo Inundación Marítima": L.layerGroup([wmsLayerMarinaT100, wmsLayerMarinaT500]),
+            "Enlace Ferroviario": wmsLayerRailTransportNetwork,
+            "Enlace de Carretera": wmsLayerRoadTransportNetwork,
+            "Densidad de Población 2023": wmsLayerDensPob2023,
+            "Emergencia": wmsLayerEmergencia,
+            "Incendios Forestales": wmsLayerIncendiosForestales
         };
 
-        // Añadir el control de capas al mapa
-        L.control.layers(baseMaps, overlayMaps, {
-            position: 'topright', // Posición del control
-            collapsed: false // Si el control está desplegado por defecto
-        }).addTo(map);
+        var controlLayers = L.control.layers(baseMaps, overlayMaps, { position: 'topright', collapsed: false }).addTo(map);
 
-        // Función para manejar clics en el mapa
+        controlLayers.getContainer().classList.add('leaflet-control-layers');
+
+        function generateGoogleMapsLink(lat, lng) {
+            return `https://www.google.com/maps?q=${lat},${lng}`;
+        }
+
         map.on("click", function (e) {
             var latlng = e.latlng;
-            var urls = [
-                getFeatureInfoUrl(latlng, wmsLayerSubestaciones),
-                getFeatureInfoUrl(latlng, wmsLayerRedesElectricas),
-                getFeatureInfoUrl(latlng, wmsLayerGeneradores),
-                getFeatureInfoUrl(latlng, wmsLayerProtectedAreas) // Nueva URL añadida aquí
-            ];
+            var activeOverlays = [];
+
+            map.eachLayer(function(layer) {
+                if (layer.options && layer.options.layers) {
+                    activeOverlays.push(layer.options.layers);
+                }
+            });
+
+            var urls = [];
+
+            if (activeOverlays.includes("MongoDBDD:subestaciones")) {
+                urls.push(getFeatureInfoUrl(latlng, wmsLayerSubestaciones));
+            }
+            if (activeOverlays.includes("MongoDBDD:redeselectricas")) {
+                urls.push(getFeatureInfoUrl(latlng, wmsLayerRedesElectricas));
+            }
+            if (activeOverlays.includes("MongoDBDD:generadores")) {
+                urls.push(getFeatureInfoUrl(latlng, wmsLayerGeneradores));
+            }
+            if (activeOverlays.includes("MongoDBDD:espacios")) {
+                urls.push(getFeatureInfoUrl(latlng, wmsLayerProtectedAreas));
+            }
+            if (activeOverlays.includes("NZ.Flood.FluvialT10")) {
+                urls.push(getFeatureInfoUrl(latlng, wmsLayerFluvialT10));
+            }
+            if (activeOverlays.includes("NZ.Flood.FluvialT100")) {
+                urls.push(getFeatureInfoUrl(latlng, wmsLayerFluvialT100));
+            }
+            if (activeOverlays.includes("NZ.Flood.FluvialT500")) {
+                urls.push(getFeatureInfoUrl(latlng, wmsLayerFluvialT500));
+            }
+            if (activeOverlays.includes("NZ.Flood.MarinaT100")) {
+                urls.push(getFeatureInfoUrl(latlng, wmsLayerMarinaT100));
+            }
+            if (activeOverlays.includes("NZ.Flood.MarinaT500")) {
+                urls.push(getFeatureInfoUrl(latlng, wmsLayerMarinaT500));
+            }
+            if (activeOverlays.includes("TN.RailTransportNetwork.RailwayLink")) {
+                urls.push(getFeatureInfoUrl(latlng, wmsLayerRailTransportNetwork));
+            }
+            if (activeOverlays.includes("TN.RoadTransportNetwork.RoadLink")) {
+                urls.push(getFeatureInfoUrl(latlng, wmsLayerRoadTransportNetwork));
+            }
+            if (activeOverlays.includes("MongoDBDD:DensPob2023")) {
+                urls.push(getFeatureInfoUrl(latlng, wmsLayerDensPob2023));
+            }
+            if (activeOverlays.includes("MongoDBDD:emergencia")) { 
+                urls.push(getFeatureInfoUrl(latlng, wmsLayerEmergencia));
+            }
+            if (activeOverlays.includes("incendios_forestales:frec_incend_2006_2015")) { 
+                urls.push(getFeatureInfoUrl(latlng, wmsLayerIncendiosForestales));
+            }
 
             $.each(urls, function(index, url) {
                 $.ajax({
@@ -85,11 +449,18 @@
                     success: function (data) {
                         if (data.features && data.features.length > 0) {
                             var content = formatFeatureInfo(data.features[0].properties);
-                            L.popup().setLatLng(latlng).setContent(content).openOn(map);
+                            var googleMapsLink = generateGoogleMapsLink(latlng.lat, latlng.lng);
+                            content += `<br><a href="${googleMapsLink}" target="_blank">Ver en Google Maps</a>`;
+                            L.popup({ closeOnClick: false, autoClose: false })
+                                .setLatLng(latlng)
+                                .setContent(content)
+                                .openOn(map);
+                        } else {
+                            console.error("No features found");
                         }
                     },
                     error: function (xhr, status, error) {
-                        console.error("Error en la solicitud:", status, error);
+                        console.error("Error in request:", status, error);
                     }
                 });
             });
@@ -98,7 +469,6 @@
         function getFeatureInfoUrl(latlng, layer) {
             var point = map.latLngToContainerPoint(latlng, map.getZoom());
             var size = map.getSize();
-
             var params = {
                 request: "GetFeatureInfo",
                 service: "WMS",
@@ -116,7 +486,6 @@
                 x: Math.round(point.x),
                 y: Math.round(point.y),
             };
-
             return layer._url + L.Util.getParamString(params, layer._url, true);
         }
 
@@ -128,6 +497,268 @@
             content += "</table>";
             return content;
         }
+
+        function updateFilters() {
+            const filterMapping = {
+                generadores: { layer: wmsLayerGeneradores, prop: "properties.plant:source" },
+                subestaciones: { layer: wmsLayerSubestaciones, prop: "properties.location" },
+                redeselectricas: { layer: wmsLayerRedesElectricas, prop: "properties.voltage" },
+                protectedareas: { layer: wmsLayerProtectedAreas, prop: "FIGURA_LP" },
+                inundaciones: { layer: wmsLayerFluvialT10, prop: "level" },
+                railtransport: { layer: wmsLayerRailTransportNetwork, prop: "type" },
+                roadtransport: { layer: wmsLayerRoadTransportNetwork, prop: "accesod" },
+                denspob2023: { layer: wmsLayerDensPob2023, prop: "dens_pob" },
+                incendiosforestales: { layer: wmsLayerIncendiosForestales, prop: "properties.frec_incend" } 
+            };
+
+            Object.keys(filterMapping).forEach(key => {
+                const { layer, prop } = filterMapping[key];
+                const filters = $(`#${key}-filters .filter:checked`).map(function () {
+                   
+                    if (this.value === "todos") {
+                        return "INCLUDE"; 
+                    }
+                    if (this.value === "areas-proteccion-natural") {
+                        return `(${["Reserva Natural", "Reserva Integral", "Reserva Parcial", "Reserva Especial", "Reserva Dirigida", "Reserva de la Biosfera", "Refugio de Fauna", "Reserva Fluvial", "Reserva Natural Concertada", "Corredores Ecológicos y de Biodiversidad", "Corredores Ecoculturales"].map(v => `"${prop}"='${v}'`).join(" OR ")})`;
+                    }
+                    if (this.value === "areas-interes-cientifico-cultural") {
+                        return `(${["Sitio de Interés Científico", "Lugar de Interés Científico", "Enclave Natural", "Monumento Natural", "Monumento Natural de Interés Nacional", "Árbol Singular"].map(v => `"${prop}"='${v}'`).join(" OR ")})`;
+                    }
+                    if (this.value === "areas-recreacion-uso-publico") {
+                        return `(${["Área Natural Recreativa", "Parque Periurbano", "Parque Periurbano de Conservación y Ocio", "Parque Rural", "Parque Regional", "Parque Natural", "Parque Nacional", "Parque Municipal"].map(v => `"${prop}"='${v}'`).join(" OR ")})`;
+                    }
+                    if (this.value === "areas-interes-ecologico") {
+                        return `(${["Área Privada de Interés Ecológico", "Área Natural de Especial Interés", "Área Natural Singular", "Humedal Protegido", "Zonas Húmedas"].map(v => `"${prop}"='${v}'`).join(" OR ")})`;
+                    }
+                    if (this.value === "areas-protegidas-europeo-nacional") {
+                        return `(${["Espacio Protegido Red Natura 2000", "Zona de la Red Ecológica Europea Natura 2000", "Zona de Importancia Comunitaria ZIC (ZEPA/ZEC)", "Paraje Natural", "Paraje Natural de Interés Nacional", "Paraje Natural Municipal"].map(v => `"${prop}"='${v}'`).join(" OR ")})`;
+                    }
+                    if (this.value === "areas-proteccion-especial-valor-paisajistico") {
+                        return `(${["Paisaje Protegido", "Paraje Natural", "Paraje Natural de Interés Nacional", "Paraje Natural Municipal", "Microrreserva", "Área Marina Protegida"].map(v => `"${prop}"='${v}'`).join(" OR ")})`;
+                    }
+                    if (this.value === "areas-especial-proteccion-fauna-flora") {
+                        return `(${["Reserva Natural de Fauna Salvaje", "Área Natural de Especial Interés", "Reserva Natural Parcial", "Corredor Ecológico"].map(v => `"${prop}"='${v}'`).join(" OR ")})`;
+                    }
+                    if (this.value === "reservas-refugios") {
+                        return `(${["Reserva de la Biosfera", "Refugio de Fauna", "Reserva Fluvial", "Reserva Natural Concertada", "Reserva Natural de Fauna Salvaje", "Reserva Natural Parcial"].map(v => `"${prop}"='${v}'`).join(" OR ")})`;
+                    }
+                    if (this.value === "parques") {
+                        return `(${["Parque Periurbano", "Parque Periurbano de Conservación y Ocio", "Parque Rural", "Parque Regional", "Parque Natural", "Parque Nacional", "Parque Municipal"].map(v => `"${prop}"='${v}'`).join(" OR ")})`;
+                    }
+                    if (this.value === "areas-interes-ecologico-biodiversidad") {
+                        return `(${["Corredores Ecológicos y de Biodiversidad", "Corredor Ecológico", "Área Natural de Especial Interés", "Área Privada de Interés Ecológico", "Área Natural Singular", "Humedal Protegido", "Zonas Húmedas"].map(v => `"${prop}"='${v}'`).join(" OR ")})`;
+                    }
+                    if (this.value === "zonas-protegidas-especial-valor") {
+                        return `(${["Espacio Protegido Red Natura 2000", "Zona de la Red Ecológica Europea Natura 2000", "Zona de Importancia Comunitaria ZIC (ZEPA/ZEC)", "Área Marina Protegida", "Paisaje Protegido", "Zona de Interés Regional", "Plan Especial de Protección (PEIN)"].map(v => `"${prop}"='${v}'`).join(" OR ")})`;
+                    }
+                    if (this.value === "monumentos-naturales-singulares") {
+                        return `(${["Monumento Natural", "Monumento Natural de Interés Nacional", "Árbol Singular", "Enclave Natural", "Microrreserva"].map(v => `"${prop}"='${v}'`).join(" OR ")})`;
+                    }
+                    if (this.value === "areas-uso-publico-recreativo") {
+                        return `(${["Área Natural Recreativa", "Áreas de Recreación y Uso Público"].map(v => `"${prop}"='${v}'`).join(" OR ")})`;
+                    }
+                    if (this.value === "areas-interes-cientifico-cultural") {
+                        return `(${["Corredores Ecoculturales", "Sitio de Interés Científico", "Lugar de Interés Científico"].map(v => `"${prop}"='${v}'`).join(" OR ")})`;
+                    }
+                    if (this.value === "parajes-naturales") {
+                        return `(${["Paraje Natural", "Paraje Natural de Interés Nacional", "Paraje Natural Municipal"].map(v => `"${prop}"='${v}'`).join(" OR ")})`;
+                    }
+                    return `"${prop}"='${this.value}'`;
+                }).get().join(" OR ");
+                if (layer._map) {
+                    layer.setParams({ CQL_FILTER: filters || null });
+                }
+            });
+        }
+
+        function updateSubestacionesFilters() {
+            const prop = "properties.substation";
+            const layer = wmsLayerSubestaciones;
+            const filters = $("#subestaciones-filters .filter-subestaciones:checked").map(function () {
+                return `"${prop}"='${this.value}'`;
+            }).get().join(" OR ");
+            if (layer._map) {
+                layer.setParams({ CQL_FILTER: filters || null });
+            }
+        }
+
+        function updateRedesElectricasFilters() {
+            const prop = "properties.voltage";
+            const layer = wmsLayerRedesElectricas;
+            const filters = $("#redeselectricas-filters .filter-redeselectricas:checked").map(function () {
+                if (this.value === "MT") {
+                    return `(${["12000", "15000", "20000", "24000", "30000", "45000", "50000"].map(v => `"${prop}"='${v}'`).join(" OR ")})`;
+                }
+                if (this.value === "AT") {
+                    return `(${["55000", "66000", "120000"].map(v => `"${prop}"='${v}'`).join(" OR ")})`;
+                }
+                if (this.value === "MAT") {
+                    return `(${["132000", "220000", "400000"].map(v => `"${prop}"='${v}'`).join(" OR ")})`;
+                }
+                if (this.value === "todas") {
+                    return "INCLUDE"; 
+                }
+                if (this.value === "otras") {
+                    const excludedValues = ["12000", "15000", "20000", "24000", "30000", 
+                                            "45000", "50000", "55000", "66000", 
+                                            "120000", "132000", "220000", "400000"];
+                    const excludedFilter = excludedValues.map(v => `"${prop}"='${v}'`).join(" OR ");
+                    return `(${prop} IS NULL OR ${prop} = '' OR NOT (${excludedFilter}))`;
+                }
+                return `"${prop}"='${this.value}'`;
+            }).get().join(" OR ");
+            if (layer._map) {
+                layer.setParams({ CQL_FILTER: filters || null });
+            }
+        }
+
+        function updateDensPob2023Filters() {
+            const prop = "dens_pob";
+            const layer = wmsLayerDensPob2023;
+            const filters = $("#denspob2023-filters .filter-denspob2023:checked").map(function () {
+                if (this.value === "muy-baja") {
+                    return `(${prop} >= 0.2 AND ${prop} <= 24.9)`;
+                }
+                if (this.value === "baja") {
+                    return `(${prop} >= 25.0 AND ${prop} <= 49.9)`;
+                }
+                if (this.value === "moderada") {
+                    return `(${prop} >= 50.0 AND ${prop} <= 99.9)`;
+                }
+                if (this.value === "alta") {
+                    return `(${prop} >= 100.0 AND ${prop} <= 248.5)`;
+                }
+                if (this.value === "muy-alta") {
+                    return `(${prop} >= 251.5 AND ${prop} <= 499.6)`;
+                }
+                if (this.value === "extremadamente-alta") {
+                    return `(${prop} >= 500.0 AND ${prop} <= 24233.3)`;
+                }
+                return `"${prop}"='${this.value}'`;
+            }).get().join(" OR ");
+            if (layer._map) {
+                layer.setParams({ CQL_FILTER: filters || null });
+            }
+        }
+
+        function updateGeneradoresFilters() {
+            const prop = "properties.plant:source";
+            const layer = wmsLayerGeneradores;
+            const filters = $("#generadores-filters .filter:checked").map(function () {
+                if (this.value === "otros") {
+                    return `(${prop} IS NULL OR ${prop} = '' OR NOT (${["solar", "hydro", "gas", "wind", "nuclear", "diesel", "coal", "oil"].map(v => `"${prop}"='${v}'`).join(" OR ")}))`;
+                }
+                if (this.value === "todos") {
+                    return "INCLUDE"; 
+                }
+                return `"${prop}"='${this.value}'`;
+            }).get().join(" OR ");
+            if (layer._map) {
+                layer.setParams({ CQL_FILTER: filters || null });
+            }
+        }
+
+        function updateEmergenciaFilters() {
+            const prop = "properties.type";
+            const layer = wmsLayerEmergencia;
+            const filters = $("#emergencia-filters .filter-emergencia:checked").map(function () {
+                return `"${prop}"='${this.value}'`;
+            }).get().join(" OR ");
+            if (layer._map) {
+                layer.setParams({ CQL_FILTER: filters || null });
+            }
+        }
+
+        function updateIncendiosForestalesFilters() {
+            const prop = "properties.frec_incend";
+            const layer = wmsLayerIncendiosForestales;
+            const filters = $("#incendiosforestales-filters .filter-incendiosforestales:checked").map(function () {
+                return `"${prop}"='${this.value}'`;
+            }).get().join(" OR ");
+            if (layer._map) {
+                layer.setParams({ CQL_FILTER: filters || null });
+            }
+        }
+
+        $(".filter").on("change", updateFilters);
+        $(".filter-subestaciones").on("change", updateSubestacionesFilters);
+        $(".filter-redeselectricas").on("change", updateRedesElectricasFilters);
+        $(".filter-denspob2023").on("change", updateDensPob2023Filters);
+        $(".filter").on("change", updateGeneradoresFilters);
+        $(".filter-emergencia").on("change", updateEmergenciaFilters);
+        $(".filter-incendiosforestales").on("change", updateIncendiosForestalesFilters); 
+
+        function toggleFilterPanel() {
+            const panels = {
+                "generadores": wmsLayerGeneradores,
+                "subestaciones": wmsLayerSubestaciones,
+                "redeselectricas": wmsLayerRedesElectricas,
+                "protectedareas": wmsLayerProtectedAreas,
+                "inundaciones": [wmsLayerFluvialT10, wmsLayerFluvialT100, wmsLayerFluvialT500, wmsLayerMarinaT100, wmsLayerMarinaT500],
+                "railtransport": wmsLayerRailTransportNetwork,
+                "roadtransport": wmsLayerRoadTransportNetwork,
+                "denspob2023": wmsLayerDensPob2023,
+                "emergencia": wmsLayerEmergencia,
+                "incendiosforestales": wmsLayerIncendiosForestales 
+            };
+
+            Object.keys(panels).forEach(panel => {
+                const layers = Array.isArray(panels[panel]) ? panels[panel] : [panels[panel]];
+                const isVisible = layers.some(layer => map.hasLayer(layer));
+                $(`#${panel}-filters`).toggle(isVisible);
+            });
+        }
+
+        function capitalize(s) {
+            return s.charAt(0).toUpperCase() + s.slice(1);
+        }
+
+        map.on('layeradd', toggleFilterPanel);
+        map.on('layerremove', toggleFilterPanel);
+
+        wmsLayerGeneradores.addTo(map);
+        wmsLayerSubestaciones.addTo(map);
+
+        function applyCQLFilter() {
+            var cqlFilter = document.getElementById('cql-input').value;
+            map.eachLayer(function(layer) {
+                if (layer.options && layer.options.layers) {
+                    layer.setParams({ CQL_FILTER: cqlFilter || null });
+                }
+            });
+        }
+
+        function clearCQLFilter() {
+            document.getElementById('cql-input').value = '';
+            applyCQLFilter();
+        }
+
+        document.getElementById('apply-cql').addEventListener('click', applyCQLFilter);
+        document.getElementById('clear-cql').addEventListener('click', clearCQLFilter);
+
+        document.getElementById('cql-input').addEventListener('input', applyCQLFilter);
+
+        map.on('overlayadd', function (eventLayer) {
+            if (eventLayer.name === "Riesgo Inundación Fluvial") {
+                wmsLayerFluvialT10.addTo(map);
+                wmsLayerFluvialT100.addTo(map);
+                wmsLayerFluvialT500.addTo(map);
+            } else if (eventLayer.name === "Riesgo Inundación Marítima") {
+                wmsLayerMarinaT100.addTo(map);
+                wmsLayerMarinaT500.addTo(map);
+            }
+        });
+
+        map.on('overlayremove', function (eventLayer) {
+            if (eventLayer.name === "Riesgo Inundación Fluvial") {
+                map.removeLayer(wmsLayerFluvialT10);
+                map.removeLayer(wmsLayerFluvialT100);
+                map.removeLayer(wmsLayerFluvialT500);
+            } else if (eventLayer.name === "Riesgo Inundación Marítima") {
+                map.removeLayer(wmsLayerMarinaT100);
+                map.removeLayer(wmsLayerMarinaT500);
+            }
+        });
     </script>
 </body>
 </html>
