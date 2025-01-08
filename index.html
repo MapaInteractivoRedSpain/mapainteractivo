@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>mapa interactivo de la red eléctrica</title>
+    <title>GeoServer WMS con Leaflet</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet-measure/dist/leaflet-measure.css" />
@@ -11,13 +11,6 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet-minimap/dist/Control.MiniMap.min.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
-    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
-    <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://unpkg.com/leaflet-measure/dist/leaflet-measure.js"></script>
-    <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
-    <script src="https://unpkg.com/leaflet-minimap/dist/Control.MiniMap.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
     <style>
         html, body {
             height: 100%;
@@ -94,6 +87,7 @@
     <div id="map" role="application" aria-label="Mapa interactivo con capas de información geoespacial"></div> 
 
     <div id="filters">
+        <!-- Panel   para filtrar los generadores por tipo -->
         <div id="generadores-filters" class="filter-panel" style="display: none;">
             <h3>Filtros Generadores</h3>
             <label><input type="checkbox" class="filter" value="solar" /> Solar</label>
@@ -108,6 +102,7 @@
             <label><input type="checkbox" class="filter" value="todos" /> Todos</label> 
         </div>
 
+        <!-- Panel para filtrar las  subestaciones -->
         <div id="subestaciones-filters" class="filter-panel" style="display: none;">
             <h3>Filtros Subestaciones</h3>
             <label><input type="checkbox" class="filter-subestaciones" value="converter" /> Convertidor</label>
@@ -119,6 +114,7 @@
             <label><input type="checkbox" class="filter-subestaciones" value="transmission" /> Transmisión</label>
         </div>
 
+        <!-- Panel para filtrar las lineas eléctricas -->
         <div id="redeselectricas-filters" class="filter-panel" style="display: none;">
             <h3>Filtros Redes Eléctricas</h3>
             <label><input type="checkbox" class="filter-redeselectricas" value="MT" /> Media Tensión</label>
@@ -128,6 +124,7 @@
             <label><input type="checkbox" class="filter-redeselectricas" value="otras" /> Otras</label> 
         </div>
 
+        <!-- Panel para  filtrar áreas protegidas -->
         <div id="protectedareas-filters" class="filter-panel" style="display: none;">
             <h3>Filtros Áreas Protegidas</h3>
             <label><input type="checkbox" class="filter" value="reservas-refugios" /> Reservas y Refugios</label>
@@ -142,6 +139,7 @@
 
         </div>
 
+        <!-- Panel para filtrar las capas de zonas con riesgo de inundacion f -->
         <div id="inundaciones-filters" class="filter-panel" style="display: none;">
             <h3>Filtros Inundaciones</h3>
             <label><input type="checkbox" class="filter" value="T10" /> T10</label>
@@ -149,18 +147,21 @@
             <label><input type="checkbox" class="filter" value="T500" /> T500</label>
         </div>
 
+        <!-- Panel para filtrar la capa ferroviario -->
         <div id="railtransport-filters" class="filter-panel" style="display: none;">
             <h3>Filtros Enlace Ferroviario</h3>
             <label><input type="checkbox" class="filter" value="high-speed" /> Alta Velocidad</label>
             <label><input type="checkbox" class="filter" value="freight" /> Carga</label>
         </div>
 
+        <!-- Panel de filtros para la capa de carretera -->
         <div id="roadtransport-filters" class="filter-panel" style="display: none;">
             <h3>Filtros Enlace de Carretera</h3>
             <label><input type="checkbox" class="filter" value="Peaje" /> Peaje</label>
             <label><input type="checkbox" class="filter" value="Libre" /> Libre</label>
         </div>
 
+        <!-- Panel de filtros para la densidad de población -->
         <div id="denspob2023-filters" class="filter-panel" style="display: none;">
             <h3>Filtros Densidad de Población</h3>
             <label><input type="checkbox" class="filter-denspob2023" value="muy-baja" /> Muy Baja (0,2 a 24,9 hab/m²)</label>
@@ -169,13 +170,6 @@
             <label><input type="checkbox" class="filter-denspob2023" value="alta" /> Alta (100,0 a 248,5 hab/m²)</label>
             <label><input type="checkbox" class="filter-denspob2023" value="muy-alta" /> Muy Alta (251,5 a 499,6 hab/m²)</label>
             <label><input type="checkbox" class="filter-denspob2023" value="extremadamente-alta" /> Extremadamente Alta (500,0 a 24,233,3 hab/m²)</label>
-        </div>
-
-        <div id="emergencia-filters" class="filter-panel" style="display: none;">
-            <h3>Filtros Emergencia</h3>
-            <label><input type="checkbox" class="filter-emergencia" value="hospital" /> Hospital</label>
-            <label><input type="checkbox" class="filter-emergencia" value="fire_station" /> Estación de Bomberos</label>
-            <label><input type="checkbox" class="filter-emergencia" value="police" /> Policía</label>
         </div>
 
     </div>
@@ -187,9 +181,18 @@
         <button id="clear-cql">Limpiar</button>
     </div>
 
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://unpkg.com/leaflet-measure/dist/leaflet-measure.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
+    <script src="https://unpkg.com/leaflet-minimap/dist/Control.MiniMap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
     <script>
+        // Inicio de el mapa
         var map = L.map("map").setView([40.4168, -3.7038], 6); 
 
+        // Capas de fondo (satelite y openstrettmap)
         var osmLayer = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
             attribution: "© OpenStreetMap contributors",
         });
@@ -205,6 +208,7 @@
 
         osmLayer.addTo(map);
 
+        // Geocodificador
         var geocoder = L.Control.geocoder({
             defaultMarkGeocode: false,
             geocoder: L.Control.Geocoder.nominatim({
@@ -230,6 +234,7 @@
         })
         .addTo(map);
 
+        // Control de medición
         var measureControl = new L.Control.Measure({
             primaryLengthUnit: 'meters',
             secondaryLengthUnit: 'kilometers',
@@ -237,10 +242,11 @@
             secondaryAreaUnit: 'hectares',
             activeColor: '#ABE67E',
             completedColor: '#C8F2BE',
-            color: '#0000FF' // Set drawing color to blue
+            color: '#0000FF' 
         });
         map.addControl(measureControl);
 
+        // Marcadores predetermindos
         var markers = L.markerClusterGroup();
 
         var marker1 = L.marker([40.4168, -3.7038]).bindPopup('Madrid');
@@ -253,6 +259,7 @@
 
         map.addLayer(markers);
 
+        // Minimapa
         var miniMapLayer = new L.TileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
             attribution: "© OpenStreetMap contributors"
         });
@@ -262,7 +269,7 @@
             position: 'bottomright'
         }).addTo(map);
 
-        // Agregar control de dibujo
+        // Dibujo
         var drawnItems = new L.FeatureGroup();
         map.addLayer(drawnItems);
 
@@ -278,6 +285,7 @@
             drawnItems.addLayer(layer);
         });
 
+        // Aqui se agregan las capas WMS(en L.tileLayer.wms modificaremos con la direcion de nuestro Geoserver)
         var wmsLayers = {
             subestaciones: L.tileLayer.wms("http://localhost:8080/geoserver/wms?", {
                 layers: "MongoDBDD:subestaciones",
@@ -339,11 +347,6 @@
                 format: "image/png",
                 transparent: true,
             }),
-            emergencia: L.tileLayer.wms("http://localhost:8080/geoserver/wms?", {
-                layers: "MongoDBDD:emergencia",
-                format: "image/png",
-                transparent: true,
-            }),
             incendiosForestales: L.tileLayer.wms("https://geoserver.iepnb.es/geoserver/incendios_forestales/frec_incend_2006_2015/wfs?", {
                 layers: "incendios_forestales:frec_incend_2006_2015",
                 format: "image/png",
@@ -366,7 +369,6 @@
             "Enlace Ferroviario": wmsLayers.railTransportNetwork,
             "Enlace de Carretera": wmsLayers.roadTransportNetwork,
             "Densidad de Población 2023": wmsLayers.densPob2023,
-            "Emergencia": wmsLayers.emergencia,
             "Incendios Forestales": wmsLayers.incendiosForestales
         };
 
@@ -374,7 +376,7 @@
 
         controlLayers.getContainer().classList.add('leaflet-control-layers');
 
-        // Add titles to the layer control
+        
         var layersControlContainer = controlLayers.getContainer();
         var baseLayersTitle = document.createElement('h3');
         baseLayersTitle.innerText = 'Visualización de Mapa';
@@ -545,7 +547,6 @@
                 "railtransport": wmsLayers.railTransportNetwork,
                 "roadtransport": wmsLayers.roadTransportNetwork,
                 "denspob2023": wmsLayers.densPob2023,
-                "emergencia": wmsLayers.emergencia,
                 "incendiosforestales": wmsLayers.incendiosForestales 
             };
 
