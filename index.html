@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Mapa intercativo de la Red Electrica de España</title>
+    <title>GeoServer WMS con Leaflet</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet-measure/dist/leaflet-measure.css" />
@@ -11,6 +11,13 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet-minimap/dist/Control.MiniMap.min.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://unpkg.com/leaflet-measure/dist/leaflet-measure.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
+    <script src="https://unpkg.com/leaflet-minimap/dist/Control.MiniMap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
     <style>
         html, body {
             height: 100%;
@@ -87,7 +94,6 @@
     <div id="map" role="application" aria-label="Mapa interactivo con capas de información geoespacial"></div> 
 
     <div id="filters">
-        <!-- Panel de filtros para generadores -->
         <div id="generadores-filters" class="filter-panel" style="display: none;">
             <h3>Filtros Generadores</h3>
             <label><input type="checkbox" class="filter" value="solar" /> Solar</label>
@@ -102,7 +108,6 @@
             <label><input type="checkbox" class="filter" value="todos" /> Todos</label> 
         </div>
 
-        <!-- Panel de filtros para subestaciones -->
         <div id="subestaciones-filters" class="filter-panel" style="display: none;">
             <h3>Filtros Subestaciones</h3>
             <label><input type="checkbox" class="filter-subestaciones" value="converter" /> Convertidor</label>
@@ -114,7 +119,6 @@
             <label><input type="checkbox" class="filter-subestaciones" value="transmission" /> Transmisión</label>
         </div>
 
-        <!-- Panel de filtros para redes eléctricas -->
         <div id="redeselectricas-filters" class="filter-panel" style="display: none;">
             <h3>Filtros Redes Eléctricas</h3>
             <label><input type="checkbox" class="filter-redeselectricas" value="MT" /> Media Tensión</label>
@@ -124,7 +128,6 @@
             <label><input type="checkbox" class="filter-redeselectricas" value="otras" /> Otras</label> 
         </div>
 
-        <!-- Panel de filtros para áreas protegidas -->
         <div id="protectedareas-filters" class="filter-panel" style="display: none;">
             <h3>Filtros Áreas Protegidas</h3>
             <label><input type="checkbox" class="filter" value="reservas-refugios" /> Reservas y Refugios</label>
@@ -136,9 +139,9 @@
             <label><input type="checkbox" class="filter" value="areas-interes-cientifico-cultural" /> Áreas de Interés Científico y Cultural</label>
             <label><input type="checkbox" class="filter" value="parajes-naturales" /> Parajes Naturales</label>
             <label><input type="checkbox" class="filter" value="todos" /> Todos</label> 
+
         </div>
 
-        <!-- Panel de filtros para inundaciones -->
         <div id="inundaciones-filters" class="filter-panel" style="display: none;">
             <h3>Filtros Inundaciones</h3>
             <label><input type="checkbox" class="filter" value="T10" /> T10</label>
@@ -146,21 +149,18 @@
             <label><input type="checkbox" class="filter" value="T500" /> T500</label>
         </div>
 
-        <!-- Panel de filtros para enlace ferroviario -->
         <div id="railtransport-filters" class="filter-panel" style="display: none;">
             <h3>Filtros Enlace Ferroviario</h3>
             <label><input type="checkbox" class="filter" value="high-speed" /> Alta Velocidad</label>
             <label><input type="checkbox" class="filter" value="freight" /> Carga</label>
         </div>
 
-        <!-- Panel de filtros para enlace de carretera -->
         <div id="roadtransport-filters" class="filter-panel" style="display: none;">
             <h3>Filtros Enlace de Carretera</h3>
             <label><input type="checkbox" class="filter" value="Peaje" /> Peaje</label>
             <label><input type="checkbox" class="filter" value="Libre" /> Libre</label>
         </div>
 
-        <!-- Panel de filtros para densidad de población -->
         <div id="denspob2023-filters" class="filter-panel" style="display: none;">
             <h3>Filtros Densidad de Población</h3>
             <label><input type="checkbox" class="filter-denspob2023" value="muy-baja" /> Muy Baja (0,2 a 24,9 hab/m²)</label>
@@ -171,13 +171,13 @@
             <label><input type="checkbox" class="filter-denspob2023" value="extremadamente-alta" /> Extremadamente Alta (500,0 a 24,233,3 hab/m²)</label>
         </div>
 
-        <!-- Panel de filtros para emergencia (eliminado) -->
-        <!-- <div id="emergencia-filters" class="filter-panel" style="display: none;">
+        <div id="emergencia-filters" class="filter-panel" style="display: none;">
             <h3>Filtros Emergencia</h3>
             <label><input type="checkbox" class="filter-emergencia" value="hospital" /> Hospital</label>
             <label><input type="checkbox" class="filter-emergencia" value="fire_station" /> Estación de Bomberos</label>
             <label><input type="checkbox" class="filter-emergencia" value="police" /> Policía</label>
-        </div> -->
+        </div>
+
     </div>
 
     <div id="cql-filter">
@@ -187,13 +187,6 @@
         <button id="clear-cql">Limpiar</button>
     </div>
 
-    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
-    <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://unpkg.com/leaflet-measure/dist/leaflet-measure.js"></script>
-    <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
-    <script src="https://unpkg.com/leaflet-minimap/dist/Control.MiniMap.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
     <script>
         var map = L.map("map").setView([40.4168, -3.7038], 6); 
 
@@ -212,7 +205,6 @@
 
         osmLayer.addTo(map);
 
-        // Geocoder para buscar ubicaciones
         var geocoder = L.Control.geocoder({
             defaultMarkGeocode: false,
             geocoder: L.Control.Geocoder.nominatim({
@@ -231,13 +223,13 @@
             ]).addTo(map);
             map.fitBounds(poly.getBounds());
 
+        
             setTimeout(function() {
                 map.removeLayer(poly);
             }, 5000);
         })
         .addTo(map);
 
-        // Control de medición
         var measureControl = new L.Control.Measure({
             primaryLengthUnit: 'meters',
             secondaryLengthUnit: 'kilometers',
@@ -249,7 +241,6 @@
         });
         map.addControl(measureControl);
 
-        // Agrupación de marcadores
         var markers = L.markerClusterGroup();
 
         var marker1 = L.marker([40.4168, -3.7038]).bindPopup('Madrid');
@@ -262,7 +253,6 @@
 
         map.addLayer(markers);
 
-        // Mini mapa
         var miniMapLayer = new L.TileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
             attribution: "© OpenStreetMap contributors"
         });
@@ -272,7 +262,7 @@
             position: 'bottomright'
         }).addTo(map);
 
-        // Control de dibujo
+        // Agregar control de dibujo
         var drawnItems = new L.FeatureGroup();
         map.addLayer(drawnItems);
 
@@ -288,74 +278,89 @@
             drawnItems.addLayer(layer);
         });
 
-        // Capas WMS
-        var wmsLayers = {
-            subestaciones: L.tileLayer.wms("http://localhost:8080/geoserver/wms?", {
-                layers: "MongoDBDD:subestaciones",
-                format: "image/png",
-                transparent: true,
-            }),
-            generadores: L.tileLayer.wms("http://localhost:8080/geoserver/wms?", {
-                layers: "MongoDBDD:generadores",
-                format: "image/png",
-                transparent: true,
-            }),
-            redeselectricas: L.tileLayer.wms("http://localhost:8080/geoserver/wms?", {
-                layers: "MongoDBDD:redeselectricas",
-                format: "image/png",
-                transparent: true,
-            }),
-            protectedareas: L.tileLayer.wms("http://localhost:8080/geoserver/wms?", {
-                layers: "MongoDBDD:espacios",
-                format: "image/png",
-                transparent: true,
-            }),
-            fluvialT10: L.tileLayer.wms("http://servicios.idee.es/wms-inspire/riesgos-naturales/inundaciones?", {
-                layers: "NZ.Flood.FluvialT10",
-                format: "image/png",
-                transparent: true,
-            }),
-            fluvialT100: L.tileLayer.wms("http://servicios.idee.es/wms-inspire/riesgos-naturales/inundaciones?", {
-                layers: "NZ.Flood.FluvialT100",
-                format: "image/png",
-                transparent: true,
-            }),
-            fluvialT500: L.tileLayer.wms("http://servicios.idee.es/wms-inspire/riesgos-naturales/inundaciones?", {
-                layers: "NZ.Flood.FluvialT500",
-                format: "image/png",
-                transparent: true,
-            }),
-            marinaT100: L.tileLayer.wms("http://servicios.idee.es/wms-inspire/riesgos-naturales/inundaciones?", {
-                layers: "NZ.Flood.MarinaT100",
-                format: "image/png",
-                transparent: true,
-            }),
-            marinaT500: L.tileLayer.wms("http://servicios.idee.es/wms-inspire/riesgos-naturales/inundaciones?", {
-                layers: "NZ.Flood.MarinaT500",
-                format: "image/png",
-                transparent: true,
-            }),
-            railTransportNetwork: L.tileLayer.wms("https://servicios.idee.es/wms-inspire/transportes?", {
-                layers: "TN.RailTransportNetwork.RailwayLink",
-                format: "image/png",
-                transparent: true,
-            }),
-            roadTransportNetwork: L.tileLayer.wms("https://servicios.idee.es/wms-inspire/transportes?", {
-                layers: "TN.RoadTransportNetwork.RoadLink",
-                format: "image/png",
-                transparent: true,
-            }),
-            densPob2023: L.tileLayer.wms("http://localhost:8080/geoserver/wms?", {
-                layers: "MongoDBDD:capadensidadbuena",
-                format: "image/png",
-                transparent: true,
-            }),
-            incendiosForestales: L.tileLayer.wms("https://geoserver.iepnb.es/geoserver/incendios_forestales/frec_incend_2006_2015/wfs?", {
-                layers: "incendios_forestales:frec_incend_2006_2015",
-                format: "image/png",
-                transparent: true,
-            })
-        };
+        var wmsLayerSubestaciones = L.tileLayer.wms("http://localhost:8080/geoserver/wms?", {
+            layers: "MongoDBDD:subestaciones",
+            format: "image/png",
+            transparent: true,
+        });
+
+        var wmsLayerGeneradores = L.tileLayer.wms("http://localhost:8080/geoserver/wms?", {
+            layers: "MongoDBDD:generadores",
+            format: "image/png",
+            transparent: true,
+        });
+
+        var wmsLayerRedesElectricas = L.tileLayer.wms("http://localhost:8080/geoserver/wms?", {
+            layers: "MongoDBDD:redeselectricas",
+            format: "image/png",
+            transparent: true,
+        });
+
+        var wmsLayerProtectedAreas = L.tileLayer.wms("http://localhost:8080/geoserver/wms?", {
+            layers: "MongoDBDD:espacios",
+            format: "image/png",
+            transparent: true,
+        });
+
+        var wmsLayerFluvialT10 = L.tileLayer.wms("http://servicios.idee.es/wms-inspire/riesgos-naturales/inundaciones?", {
+            layers: "NZ.Flood.FluvialT10",
+            format: "image/png",
+            transparent: true,
+        });
+
+        var wmsLayerFluvialT100 = L.tileLayer.wms("http://servicios.idee.es/wms-inspire/riesgos-naturales/inundaciones?", {
+            layers: "NZ.Flood.FluvialT100",
+            format: "image/png",
+            transparent: true,
+        });
+
+        var wmsLayerFluvialT500 = L.tileLayer.wms("http://servicios.idee.es/wms-inspire/riesgos-naturales/inundaciones?", {
+            layers: "NZ.Flood.FluvialT500",
+            format: "image/png",
+            transparent: true,
+        });
+
+        var wmsLayerMarinaT100 = L.tileLayer.wms("http://servicios.idee.es/wms-inspire/riesgos-naturales/inundaciones?", {
+            layers: "NZ.Flood.MarinaT100",
+            format: "image/png",
+            transparent: true,
+        });
+
+        var wmsLayerMarinaT500 = L.tileLayer.wms("http://servicios.idee.es/wms-inspire/riesgos-naturales/inundaciones?", {
+            layers: "NZ.Flood.MarinaT500",
+            format: "image/png",
+            transparent: true,
+        });
+
+        var wmsLayerRailTransportNetwork = L.tileLayer.wms("https://servicios.idee.es/wms-inspire/transportes?", {
+            layers: "TN.RailTransportNetwork.RailwayLink",
+            format: "image/png",
+            transparent: true,
+        });
+
+        var wmsLayerRoadTransportNetwork = L.tileLayer.wms("https://servicios.idee.es/wms-inspire/transportes?", {
+            layers: "TN.RoadTransportNetwork.RoadLink",
+            format: "image/png",
+            transparent: true,
+        });
+
+        var wmsLayerDensPob2023 = L.tileLayer.wms("http://localhost:8080/geoserver/wms?", {
+            layers: "MongoDBDD:capadensidadbuena",
+            format: "image/png",
+            transparent: true,
+        });
+
+        var wmsLayerEmergencia = L.tileLayer.wms("http://localhost:8080/geoserver/wms?", {
+            layers: "MongoDBDD:emergencia",
+            format: "image/png",
+            transparent: true,
+        });
+
+        var wmsLayerIncendiosForestales = L.tileLayer.wms("https://geoserver.iepnb.es/geoserver/incendios_forestales/frec_incend_2006_2015/wfs?", {
+            layers: "incendios_forestales:frec_incend_2006_2015",
+            format: "image/png",
+            transparent: true,
+        });
 
         var baseMaps = { 
             "OpenStreetMap": osmLayer, 
@@ -363,23 +368,24 @@
         };
 
         var overlayMaps = {
-            "Subestaciones": wmsLayers.subestaciones,
-            "Redes Eléctricas": wmsLayers.redeselectricas,
-            "Generadores": wmsLayers.generadores,
-            "Áreas Protegidas": wmsLayers.protectedareas,
-            "Riesgo Inundación Fluvial": L.layerGroup([wmsLayers.fluvialT10, wmsLayers.fluvialT100, wmsLayers.fluvialT500]),
-            "Riesgo Inundación Marítima": L.layerGroup([wmsLayers.marinaT100, wmsLayers.marinaT500]),
-            "Enlace Ferroviario": wmsLayers.railTransportNetwork,
-            "Enlace de Carretera": wmsLayers.roadTransportNetwork,
-            "Densidad de Población 2023": wmsLayers.densPob2023,
-            "Incendios Forestales": wmsLayers.incendiosForestales
+            "Subestaciones": wmsLayerSubestaciones,
+            "Redes Eléctricas": wmsLayerRedesElectricas,
+            "Generadores": wmsLayerGeneradores,
+            "Áreas Protegidas": wmsLayerProtectedAreas,
+            "Riesgo Inundación Fluvial": L.layerGroup([wmsLayerFluvialT10, wmsLayerFluvialT100, wmsLayerFluvialT500]),
+            "Riesgo Inundación Marítima": L.layerGroup([wmsLayerMarinaT100, wmsLayerMarinaT500]),
+            "Enlace Ferroviario": wmsLayerRailTransportNetwork,
+            "Enlace de Carretera": wmsLayerRoadTransportNetwork,
+            "Densidad de Población 2023": wmsLayerDensPob2023,
+            "Emergencia": wmsLayerEmergencia,
+            "Incendios Forestales": wmsLayerIncendiosForestales
         };
 
         var controlLayers = L.control.layers(baseMaps, overlayMaps, { position: 'topright', collapsed: false }).addTo(map);
 
         controlLayers.getContainer().classList.add('leaflet-control-layers');
 
-        // Añadir títulos al control de capas
+        // Add titles to the layer control
         var layersControlContainer = controlLayers.getContainer();
         var baseLayersTitle = document.createElement('h3');
         baseLayersTitle.innerText = 'Visualización de Mapa';
@@ -389,7 +395,7 @@
         overlaysTitle.innerText = 'Capas';
         layersControlContainer.insertBefore(overlaysTitle, layersControlContainer.children[2]);
 
-        function createGoogleMapsLink(lat, lng) {
+        function generateGoogleMapsLink(lat, lng) {
             return `https://www.google.com/maps?q=${lat},${lng}`;
         }
 
@@ -405,11 +411,48 @@
 
             var urls = [];
 
-            Object.keys(wmsLayers).forEach(function(key) {
-                if (activeOverlays.includes(wmsLayers[key].options.layers)) {
-                    urls.push(buildFeatureInfoUrl(latlng, wmsLayers[key]));
-                }
-            });
+            if (activeOverlays.includes("MongoDBDD:subestaciones")) {
+                urls.push(getFeatureInfoUrl(latlng, wmsLayerSubestaciones));
+            }
+            if (activeOverlays.includes("MongoDBDD:redeselectricas")) {
+                urls.push(getFeatureInfoUrl(latlng, wmsLayerRedesElectricas));
+            }
+            if (activeOverlays.includes("MongoDBDD:generadores")) {
+                urls.push(getFeatureInfoUrl(latlng, wmsLayerGeneradores));
+            }
+            if (activeOverlays.includes("MongoDBDD:espacios")) {
+                urls.push(getFeatureInfoUrl(latlng, wmsLayerProtectedAreas));
+            }
+            if (activeOverlays.includes("NZ.Flood.FluvialT10")) {
+                urls.push(getFeatureInfoUrl(latlng, wmsLayerFluvialT10));
+            }
+            if (activeOverlays.includes("NZ.Flood.FluvialT100")) {
+                urls.push(getFeatureInfoUrl(latlng, wmsLayerFluvialT100));
+            }
+            if (activeOverlays.includes("NZ.Flood.FluvialT500")) {
+                urls.push(getFeatureInfoUrl(latlng, wmsLayerFluvialT500));
+            }
+            if (activeOverlays.includes("NZ.Flood.MarinaT100")) {
+                urls.push(getFeatureInfoUrl(latlng, wmsLayerMarinaT100));
+            }
+            if (activeOverlays.includes("NZ.Flood.MarinaT500")) {
+                urls.push(getFeatureInfoUrl(latlng, wmsLayerMarinaT500));
+            }
+            if (activeOverlays.includes("TN.RailTransportNetwork.RailwayLink")) {
+                urls.push(getFeatureInfoUrl(latlng, wmsLayerRailTransportNetwork));
+            }
+            if (activeOverlays.includes("TN.RoadTransportNetwork.RoadLink")) {
+                urls.push(getFeatureInfoUrl(latlng, wmsLayerRoadTransportNetwork));
+            }
+            if (activeOverlays.includes("MongoDBDD:DensPob2023")) {
+                urls.push(getFeatureInfoUrl(latlng, wmsLayerDensPob2023));
+            }
+            if (activeOverlays.includes("MongoDBDD:emergencia")) { 
+                urls.push(getFeatureInfoUrl(latlng, wmsLayerEmergencia));
+            }
+            if (activeOverlays.includes("incendios_forestales:frec_incend_2006_2015")) { 
+                urls.push(getFeatureInfoUrl(latlng, wmsLayerIncendiosForestales));
+            }
 
             $.each(urls, function(index, url) {
                 $.ajax({
@@ -417,7 +460,7 @@
                     success: function (data) {
                         if (data.features && data.features.length > 0) {
                             var content = formatFeatureInfo(data.features[0].properties);
-                            var googleMapsLink = createGoogleMapsLink(latlng.lat, latlng.lng);
+                            var googleMapsLink = generateGoogleMapsLink(latlng.lat, latlng.lng);
                             content += `<br><a href="${googleMapsLink}" target="_blank">Ver en Google Maps</a>`;
                             L.popup({ closeOnClick: false, autoClose: false })
                                 .setLatLng(latlng)
@@ -434,7 +477,7 @@
             });
         });
 
-        function buildFeatureInfoUrl(latlng, layer) {
+        function getFeatureInfoUrl(latlng, layer) {
             var point = map.latLngToContainerPoint(latlng, map.getZoom());
             var size = map.getSize();
             var params = {
@@ -466,22 +509,23 @@
             return content;
         }
 
-        function applyLayerFilters() {
+        function updateFilters() {
             const filterMapping = {
-                generadores: { layer: wmsLayers.generadores, prop: "properties.plant:source" },
-                subestaciones: { layer: wmsLayers.subestaciones, prop: "properties.location" },
-                redeselectricas: { layer: wmsLayers.redeselectricas, prop: "properties.voltage" },
-                protectedareas: { layer: wmsLayers.protectedareas, prop: "FIGURA_LP" },
-                inundaciones: { layer: wmsLayers.fluvialT10, prop: "level" },
-                railtransport: { layer: wmsLayers.railTransportNetwork, prop: "type" },
-                roadtransport: { layer: wmsLayers.roadTransportNetwork, prop: "accesod" },
-                denspob2023: { layer: wmsLayers.densPob2023, prop: "dens_pob" },
-                incendiosforestales: { layer: wmsLayers.incendiosForestales, prop: "properties.frec_incend" } 
+                generadores: { layer: wmsLayerGeneradores, prop: "properties.plant:source" },
+                subestaciones: { layer: wmsLayerSubestaciones, prop: "properties.location" },
+                redeselectricas: { layer: wmsLayerRedesElectricas, prop: "properties.voltage" },
+                protectedareas: { layer: wmsLayerProtectedAreas, prop: "FIGURA_LP" },
+                inundaciones: { layer: wmsLayerFluvialT10, prop: "level" },
+                railtransport: { layer: wmsLayerRailTransportNetwork, prop: "type" },
+                roadtransport: { layer: wmsLayerRoadTransportNetwork, prop: "accesod" },
+                denspob2023: { layer: wmsLayerDensPob2023, prop: "dens_pob" },
+                incendiosforestales: { layer: wmsLayerIncendiosForestales, prop: "properties.frec_incend" } 
             };
 
             Object.keys(filterMapping).forEach(key => {
                 const { layer, prop } = filterMapping[key];
                 const filters = $(`#${key}-filters .filter:checked`).map(function () {
+                   
                     if (this.value === "todos") {
                         return "INCLUDE"; 
                     }
@@ -538,21 +582,141 @@
             });
         }
 
-        $(".filter").on("change", applyLayerFilters);
+        function updateSubestacionesFilters() {
+            const prop = "properties.substation";
+            const layer = wmsLayerSubestaciones;
+            const filters = $("#subestaciones-filters .filter-subestaciones:checked").map(function () {
+                return `"${prop}"='${this.value}'`;
+            }).get().join(" OR ");
+            if (layer._map) {
+                layer.setParams({ CQL_FILTER: filters || null });
+            }
+        }
+
+        function updateRedesElectricasFilters() {
+            const prop = "properties.voltage";
+            const layer = wmsLayerRedesElectricas;
+            const filters = $("#redeselectricas-filters .filter-redeselectricas:checked").map(function () {
+                if (this.value === "MT") {
+                    return `(${["12000", "15000", "20000", "24000", "30000", "45000", "50000"].map(v => `"${prop}"='${v}'`).join(" OR ")})`;
+                }
+                if (this.value === "AT") {
+                    return `(${["55000", "66000", "120000"].map(v => `"${prop}"='${v}'`).join(" OR ")})`;
+                }
+                if (this.value === "MAT") {
+                    return `(${["132000", "220000", "400000"].map(v => `"${prop}"='${v}'`).join(" OR ")})`;
+                }
+                if (this.value === "todas") {
+                    return "INCLUDE"; 
+                }
+                if (this.value === "otras") {
+                    const excludedValues = ["12000", "15000", "20000", "24000", "30000", 
+                                            "45000", "50000", "55000", "66000", 
+                                            "120000", "132000", "220000", "400000"];
+                    const excludedFilter = excludedValues.map(v => `"${prop}"='${v}'`).join(" OR ");
+                    return `(${prop} IS NULL OR ${prop} = '' OR NOT (${excludedFilter}))`;
+                }
+                return `"${prop}"='${this.value}'`;
+            }).get().join(" OR ");
+            if (layer._map) {
+                layer.setParams({ CQL_FILTER: filters || null });
+            }
+        }
+
+        function updateDensPob2023Filters() {
+            const prop = "dens_pob";
+            const layer = wmsLayerDensPob2023;
+            const filters = $("#denspob2023-filters .filter-denspob2023:checked").map(function () {
+                if (this.value === "muy-baja") {
+                    return `(${prop} >= 0.2 AND ${prop} <= 24.9)`;
+                }
+                if (this.value === "baja") {
+                    return `(${prop} >= 25.0 AND ${prop} <= 49.9)`;
+                }
+                if (this.value === "moderada") {
+                    return `(${prop} >= 50.0 AND ${prop} <= 99.9)`;
+                }
+                if (this.value === "alta") {
+                    return `(${prop} >= 100.0 AND ${prop} <= 248.5)`;
+                }
+                if (this.value === "muy-alta") {
+                    return `(${prop} >= 251.5 AND ${prop} <= 499.6)`;
+                }
+                if (this.value === "extremadamente-alta") {
+                    return `(${prop} >= 500.0 AND ${prop} <= 24233.3)`;
+                }
+                return `"${prop}"='${this.value}'`;
+            }).get().join(" OR ");
+            if (layer._map) {
+                layer.setParams({ CQL_FILTER: filters || null });
+            }
+        }
+
+        function updateGeneradoresFilters() {
+            const prop = "properties.plant:source";
+            const layer = wmsLayerGeneradores;
+            const filters = $("#generadores-filters .filter:checked").map(function () {
+                if (this.value === "otros") {
+                    return `(${prop} IS NULL OR ${prop} = '' OR NOT (${["solar", "hydro", "gas", "wind", "nuclear", "diesel", "coal", "oil"].map(v => `"${prop}"='${v}'`).join(" OR ")}))`;
+                }
+                if (this.value === "todos") {
+                    return "INCLUDE"; 
+                }
+                return `"${prop}"='${this.value}'`;
+            }).get().join(" OR ");
+            if (layer._map) {
+                layer.setParams({ CQL_FILTER: filters || null });
+            }
+        }
+
+        function updateEmergenciaFilters() {
+            const prop = "properties.type";
+            const layer = wmsLayerEmergencia;
+            const filters = $("#emergencia-filters .filter-emergencia:checked").map(function () {
+                return `"${prop}"='${this.value}'`;
+            }).get().join(" OR ");
+            if (layer._map) {
+                layer.setParams({ CQL_FILTER: filters || null });
+            }
+        }
+
+        function updateIncendiosForestalesFilters() {
+            const prop = "properties.frec_incend";
+            const layer = wmsLayerIncendiosForestales;
+            const filters = $("#incendiosforestales-filters .filter-incendiosforestales:checked").map(function () {
+                return `"${prop}"='${this.value}'`;
+            }).get().join(" OR ");
+            if (layer._map) {
+                layer.setParams({ CQL_FILTER: filters || null });
+            }
+        }
+
+        $(".filter").on("change", updateFilters);
+        $(".filter-subestaciones").on("change", updateSubestacionesFilters);
+        $(".filter-redeselectricas").on("change", updateRedesElectricasFilters);
+        $(".filter-denspob2023").on("change", updateDensPob2023Filters);
+        $(".filter").on("change", updateGeneradoresFilters);
+        $(".filter-emergencia").on("change", updateEmergenciaFilters);
+        $(".filter-incendiosforestales").on("change", updateIncendiosForestalesFilters); 
 
         function toggleFilterPanel() {
             const panels = {
-                "generadores": wmsLayers.generadores,
-                "subestaciones": wmsLayers.subestaciones,
-                "redeselectricas": wmsLayers.redeselectricas,
-                "protectedareas": wmsLayers.protectedareas,
-                "inundaciones": [wmsLayers.fluvialT10, wmsLayers.fluvialT100, wmsLayers.fluvialT500, wmsLayers.marinaT100, wmsLayers.marinaT500],
-                "railtransport": wmsLayers.railTransportNetwork,
-                "roadtransport": wmsLayers.roadTransportNetwork,
-                "denspob2023": wmsLayers.densPob2023,
-                "incendiosforestales": wmsLayers.incendiosForestales 
+                "generadores": wmsLayerGeneradores,
+                "subestaciones": wmsLayerSubestaciones,
+                "redeselectricas": wmsLayerRedesElectricas,
+                "protectedareas": wmsLayerProtectedAreas,
+                "inundaciones": [wmsLayerFluvialT10, wmsLayerFluvialT100, wmsLayerFluvialT500, wmsLayerMarinaT100, wmsLayerMarinaT500],
+                "railtransport": wmsLayerRailTransportNetwork,
+                "roadtransport": wmsLayerRoadTransportNetwork,
+                "denspob2023": wmsLayerDensPob2023,
+                "emergencia": wmsLayerEmergencia,
+                "incendiosforestales": wmsLayerIncendiosForestales 
             };
 
+            Object.keys(panels).forEach(panel => {
+                const layers = Array.isArray(panels[panel]) ? panels[panel] : [panels[panel]];
+                const isVisible = layers.some(layer => map.hasLayer(layer));
+                $(`#${panel}-filters`).toggle(isVisible);
             });
         }
 
@@ -563,8 +727,8 @@
         map.on('layeradd', toggleFilterPanel);
         map.on('layerremove', toggleFilterPanel);
 
-        wmsLayers.generadores.addTo(map);
-        wmsLayers.subestaciones.addTo(map);
+        wmsLayerGeneradores.addTo(map);
+        wmsLayerSubestaciones.addTo(map);
 
         function applyCQLFilter() {
             var cqlFilter = document.getElementById('cql-input').value;
@@ -588,23 +752,23 @@
 
         map.on('overlayadd', function (eventLayer) {
             if (eventLayer.name === "Riesgo Inundación Fluvial") {
-                wmsLayers.fluvialT10.addTo(map);
-                wmsLayers.fluvialT100.addTo(map);
-                wmsLayers.fluvialT500.addTo(map);
+                wmsLayerFluvialT10.addTo(map);
+                wmsLayerFluvialT100.addTo(map);
+                wmsLayerFluvialT500.addTo(map);
             } else if (eventLayer.name === "Riesgo Inundación Marítima") {
-                wmsLayers.marinaT100.addTo(map);
-                wmsLayers.marinaT500.addTo(map);
+                wmsLayerMarinaT100.addTo(map);
+                wmsLayerMarinaT500.addTo(map);
             }
         });
 
         map.on('overlayremove', function (eventLayer) {
             if (eventLayer.name === "Riesgo Inundación Fluvial") {
-                map.removeLayer(wmsLayers.fluvialT10);
-                map.removeLayer(wmsLayers.fluvialT100);
-                map.removeLayer(wmsLayers.fluvialT500);
+                map.removeLayer(wmsLayerFluvialT10);
+                map.removeLayer(wmsLayerFluvialT100);
+                map.removeLayer(wmsLayerFluvialT500);
             } else if (eventLayer.name === "Riesgo Inundación Marítima") {
-                map.removeLayer(wmsLayers.marinaT100);
-                map.removeLayer(wmsLayers.marinaT500);
+                map.removeLayer(wmsLayerMarinaT100);
+                map.removeLayer(wmsLayerMarinaT500);
             }
         });
     </script>
