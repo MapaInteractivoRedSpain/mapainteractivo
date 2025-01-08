@@ -3,93 +3,18 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>GeoServer WMS con Leaflet</title>
-    <!-- Hoja de estilo principal de Leaflet -->
+    <title>Mapa intercativo de la Red Electrica de España</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
-    <!-- Hoja de estilo para el control de geocodificación de Leaflet -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
-    <!-- Hoja de estilo para el control de medición de Leaflet -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet-measure/dist/leaflet-measure.css" />
-    <!-- Hojas de estilo para la agrupación de marcadores de Leaflet -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css" />
-    <!-- Hoja de estilo para el mini mapa de Leaflet -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet-minimap/dist/Control.MiniMap.min.css" />
-    <!-- Hoja de estilo para el control de dibujo de Leaflet -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
     <style>
-        <style>
-    /* Estilos generales para html y body */
-    html, body {
-        height: 100%;
-        margin: 0;
-        font-family: Arial, sans-serif;
-    }
-
-    /* Estilo para el contenedor del mapa */
-    #map {
-        height: 100%;
-    }
-
-    /* Estilos para los controles de capas y filtros */
-    .leaflet-control-layers, #filters {
-        background: #003366; 
-        border-radius: 5px;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
-        padding: 10px;
-        color: white; 
-        max-height: 300px; 
-        overflow-y: auto; 
-    }
-
-    /* Estilos para las etiquetas y checkboxes en los controles de capas y filtros */
-    .leaflet-control-layers label, #filters label {
-        display: flex;
-        align-items: center;
-        margin-bottom: 5px;
-        color: white;
-    }
-
-    .leaflet-control-layers input[type="checkbox"], #filters input[type="checkbox"] {
-        margin-right: 8px;
-    }
-
-    /* Estilos para los encabezados en los controles de capas y filtros */
-    .leaflet-control-layers h3, #filters h3 {
-        margin: 0;
-        font-size: 16px;
-        color: #ffffff; 
-    }
-
-    /* Estilo para los paneles de filtros */
-    .filter-panel {
-        margin-bottom: 20px;
-    }
-
-    /* Posicionamiento del contenedor de filtros */
-    #filters {
-        position: absolute;
-        top: 10px;
-        left: 10px;
-        z-index: 1000;
-    }
-
-    /* Estilos para el contenedor del filtro CQL */
-    #cql-filter {
-        position: absolute;
-        bottom: 10px; 
-        left: 10px;
-        z-index: 1000;
-        background: #003366;
-        border-radius: 5px;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
-        padding: 10px;
-        color: white;
-    }
-
         html, body {
             height: 100%;
-            margin: 0;                            
+            margin: 0;
             font-family: Arial, sans-serif;
         }
         #map {
@@ -162,7 +87,7 @@
     <div id="map" role="application" aria-label="Mapa interactivo con capas de información geoespacial"></div> 
 
     <div id="filters">
-        <!-- Panel para filtrar los generadores por tipo -->
+        <!-- Panel de filtros para generadores -->
         <div id="generadores-filters" class="filter-panel" style="display: none;">
             <h3>Filtros Generadores</h3>
             <label><input type="checkbox" class="filter" value="solar" /> Solar</label>
@@ -177,7 +102,7 @@
             <label><input type="checkbox" class="filter" value="todos" /> Todos</label> 
         </div>
 
-        <!-- Panel para filtrar las subestaciones -->
+        <!-- Panel de filtros para subestaciones -->
         <div id="subestaciones-filters" class="filter-panel" style="display: none;">
             <h3>Filtros Subestaciones</h3>
             <label><input type="checkbox" class="filter-subestaciones" value="converter" /> Convertidor</label>
@@ -189,7 +114,7 @@
             <label><input type="checkbox" class="filter-subestaciones" value="transmission" /> Transmisión</label>
         </div>
 
-        <!-- Panel para filtrar las lineas eléctricas -->
+        <!-- Panel de filtros para redes eléctricas -->
         <div id="redeselectricas-filters" class="filter-panel" style="display: none;">
             <h3>Filtros Redes Eléctricas</h3>
             <label><input type="checkbox" class="filter-redeselectricas" value="MT" /> Media Tensión</label>
@@ -199,7 +124,7 @@
             <label><input type="checkbox" class="filter-redeselectricas" value="otras" /> Otras</label> 
         </div>
 
-        <!-- Panel para filtrar áreas protegidas -->
+        <!-- Panel de filtros para áreas protegidas -->
         <div id="protectedareas-filters" class="filter-panel" style="display: none;">
             <h3>Filtros Áreas Protegidas</h3>
             <label><input type="checkbox" class="filter" value="reservas-refugios" /> Reservas y Refugios</label>
@@ -211,10 +136,9 @@
             <label><input type="checkbox" class="filter" value="areas-interes-cientifico-cultural" /> Áreas de Interés Científico y Cultural</label>
             <label><input type="checkbox" class="filter" value="parajes-naturales" /> Parajes Naturales</label>
             <label><input type="checkbox" class="filter" value="todos" /> Todos</label> 
-
         </div>
 
-        <!-- Panel para filtrar las capas de zonas con riesgo de inundacion  -->
+        <!-- Panel de filtros para inundaciones -->
         <div id="inundaciones-filters" class="filter-panel" style="display: none;">
             <h3>Filtros Inundaciones</h3>
             <label><input type="checkbox" class="filter" value="T10" /> T10</label>
@@ -222,21 +146,21 @@
             <label><input type="checkbox" class="filter" value="T500" /> T500</label>
         </div>
 
-        <!-- Panel para filtrar la capa ferroviario -->
+        <!-- Panel de filtros para enlace ferroviario -->
         <div id="railtransport-filters" class="filter-panel" style="display: none;">
             <h3>Filtros Enlace Ferroviario</h3>
             <label><input type="checkbox" class="filter" value="high-speed" /> Alta Velocidad</label>
             <label><input type="checkbox" class="filter" value="freight" /> Carga</label>
         </div>
 
-        <!-- Panel de filtros para la capa de carretera -->
+        <!-- Panel de filtros para enlace de carretera -->
         <div id="roadtransport-filters" class="filter-panel" style="display: none;">
             <h3>Filtros Enlace de Carretera</h3>
             <label><input type="checkbox" class="filter" value="Peaje" /> Peaje</label>
             <label><input type="checkbox" class="filter" value="Libre" /> Libre</label>
         </div>
 
-        <!-- Panel de filtros para la densidad de población -->
+        <!-- Panel de filtros para densidad de población -->
         <div id="denspob2023-filters" class="filter-panel" style="display: none;">
             <h3>Filtros Densidad de Población</h3>
             <label><input type="checkbox" class="filter-denspob2023" value="muy-baja" /> Muy Baja (0,2 a 24,9 hab/m²)</label>
@@ -247,6 +171,13 @@
             <label><input type="checkbox" class="filter-denspob2023" value="extremadamente-alta" /> Extremadamente Alta (500,0 a 24,233,3 hab/m²)</label>
         </div>
 
+        <!-- Panel de filtros para emergencia (eliminado) -->
+        <!-- <div id="emergencia-filters" class="filter-panel" style="display: none;">
+            <h3>Filtros Emergencia</h3>
+            <label><input type="checkbox" class="filter-emergencia" value="hospital" /> Hospital</label>
+            <label><input type="checkbox" class="filter-emergencia" value="fire_station" /> Estación de Bomberos</label>
+            <label><input type="checkbox" class="filter-emergencia" value="police" /> Policía</label>
+        </div> -->
     </div>
 
     <div id="cql-filter">
@@ -264,10 +195,8 @@
     <script src="https://unpkg.com/leaflet-minimap/dist/Control.MiniMap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
     <script>
-        // Inicio de el mapa
         var map = L.map("map").setView([40.4168, -3.7038], 6); 
 
-        // Capas de fondo (satelite y openstrettmap)
         var osmLayer = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
             attribution: "© OpenStreetMap contributors",
         });
@@ -275,8 +204,7 @@
         var satelliteLayer = L.tileLayer("https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png", {
             attribution: "© OpenTopoMap contributors",
         });
-        
-        //   Capas base del mapa que se pueden alternar con el control de capas
+
         var baseMaps = {
             "OpenStreetMap": osmLayer,
             "Satélite": satelliteLayer
@@ -284,7 +212,7 @@
 
         osmLayer.addTo(map);
 
-        // Geocodificador para buscar ubicaciones ene el mapa
+        // Geocoder para buscar ubicaciones
         var geocoder = L.Control.geocoder({
             defaultMarkGeocode: false,
             geocoder: L.Control.Geocoder.nominatim({
@@ -303,7 +231,6 @@
             ]).addTo(map);
             map.fitBounds(poly.getBounds());
 
-        
             setTimeout(function() {
                 map.removeLayer(poly);
             }, 5000);
@@ -318,11 +245,11 @@
             secondaryAreaUnit: 'hectares',
             activeColor: '#ABE67E',
             completedColor: '#C8F2BE',
-            color: '#0000FF' 
+            color: '#0000FF' // Set drawing color to blue
         });
         map.addControl(measureControl);
 
-        // Marcadores predetermindos
+        // Agrupación de marcadores
         var markers = L.markerClusterGroup();
 
         var marker1 = L.marker([40.4168, -3.7038]).bindPopup('Madrid');
@@ -335,7 +262,7 @@
 
         map.addLayer(markers);
 
-        // Minimapa
+        // Mini mapa
         var miniMapLayer = new L.TileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
             attribution: "© OpenStreetMap contributors"
         });
@@ -361,7 +288,7 @@
             drawnItems.addLayer(layer);
         });
 
-        // Aqui se agregan las capas WMS(en L.tileLayer.wms modificaremos con la direcion de nuestro Geoserver)
+        // Capas WMS
         var wmsLayers = {
             subestaciones: L.tileLayer.wms("http://localhost:8080/geoserver/wms?", {
                 layers: "MongoDBDD:subestaciones",
@@ -434,7 +361,7 @@
             "OpenStreetMap": osmLayer, 
             "Satélite": satelliteLayer
         };
-// Definición de las capas superpuestas en el mapa que se pueden alternal en el control de capas del 
+
         var overlayMaps = {
             "Subestaciones": wmsLayers.subestaciones,
             "Redes Eléctricas": wmsLayers.redeselectricas,
@@ -447,12 +374,12 @@
             "Densidad de Población 2023": wmsLayers.densPob2023,
             "Incendios Forestales": wmsLayers.incendiosForestales
         };
-    // Agregar el control de capas al mapa
+
         var controlLayers = L.control.layers(baseMaps, overlayMaps, { position: 'topright', collapsed: false }).addTo(map);
 
         controlLayers.getContainer().classList.add('leaflet-control-layers');
 
-        // Agregar los títulos al control de capas
+        // Añadir títulos al control de capas
         var layersControlContainer = controlLayers.getContainer();
         var baseLayersTitle = document.createElement('h3');
         baseLayersTitle.innerText = 'Visualización de Mapa';
@@ -461,7 +388,7 @@
         var overlaysTitle = document.createElement('h3');
         overlaysTitle.innerText = 'Capas';
         layersControlContainer.insertBefore(overlaysTitle, layersControlContainer.children[2]);
-// Función para agregar el enlace de Google maps
+
         function createGoogleMapsLink(lat, lng) {
             return `https://www.google.com/maps?q=${lat},${lng}`;
         }
@@ -506,7 +433,8 @@
                 });
             });
         });
-// Generar la URL para obtener información de la subicaciones con  function buildFeatureInfoUrl(latlng, layer) {
+
+        function buildFeatureInfoUrl(latlng, layer) {
             var point = map.latLngToContainerPoint(latlng, map.getZoom());
             var size = map.getSize();
             var params = {
@@ -528,7 +456,8 @@
             };
             return layer._url + L.Util.getParamString(params, layer._url, true);
         }
-// Dar formato a la información de entidades para mostrar en el popup  
+
+        function formatFeatureInfo(properties) {
             var content = "<table>";
             for (var key in properties) {
                 content += "<tr><th>" + key + "</th><td>" + properties[key] + "</td></tr>";
@@ -536,7 +465,7 @@
             content += "</table>";
             return content;
         }
-        // Aplicar filtros a las capas, dando en "prop" el nombre del campo que queremos filtrar
+
         function applyLayerFilters() {
             const filterMapping = {
                 generadores: { layer: wmsLayers.generadores, prop: "properties.plant:source" },
@@ -610,7 +539,7 @@
         }
 
         $(".filter").on("change", applyLayerFilters);
-        // Mostrar u ocultar paneles de filtros según la capa seleccionada
+
         function toggleFilterPanel() {
             const panels = {
                 "generadores": wmsLayers.generadores,
@@ -624,10 +553,6 @@
                 "incendiosforestales": wmsLayers.incendiosForestales 
             };
 
-            Object.keys(panels).forEach(panel => {
-                const layers = Array.isArray(panels[panel]) ? panels[panel] : [panels[panel]];
-                const isVisible = layers.some(layer => map.hasLayer(layer));
-                $(`#${panel}-filters`).toggle(isVisible);
             });
         }
 
@@ -637,10 +562,10 @@
 
         map.on('layeradd', toggleFilterPanel);
         map.on('layerremove', toggleFilterPanel);
-        // Añadir capas iniciales al mapa
+
         wmsLayers.generadores.addTo(map);
         wmsLayers.subestaciones.addTo(map);
-        // Aplicar filtro CQL a las capas
+
         function applyCQLFilter() {
             var cqlFilter = document.getElementById('cql-input').value;
             map.eachLayer(function(layer) {
@@ -650,7 +575,7 @@
                 }
             });
         }
-        // Limpiar filtro CQL
+
         function clearCQLFilter() {
             document.getElementById('cql-input').value = '';
             applyCQLFilter();
@@ -660,7 +585,7 @@
         document.getElementById('clear-cql').addEventListener('click', clearCQLFilter);
 
         document.getElementById('cql-input').addEventListener('input', applyCQLFilter);
-        // Añadir o quitar capas de riesgo de inundación según la selección
+
         map.on('overlayadd', function (eventLayer) {
             if (eventLayer.name === "Riesgo Inundación Fluvial") {
                 wmsLayers.fluvialT10.addTo(map);
